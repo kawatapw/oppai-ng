@@ -131,6 +131,18 @@ void usage() {
     "  default: 1\n"
     "  example: scorev2\n"
     "\n"
+    "-relax\n"
+    "  calculate relax pp\n"
+    "\n"
+    "-autopilot\n"
+    "  calculate autopilot pp\n"
+    "\n"
+    "-rv0\n"
+    "  use relax pp v0\n"
+    "\n"
+    "-rv1\n"
+    "  use relax pp v1 (default)\n"
+    "\n"
   );
 
   info(
@@ -781,6 +793,7 @@ int main(int argc, char* argv[]) {
   int mods = MODS_NOMOD;
   float tmpf, speed_stars = 0, aim_stars = 0, accuracy_percent = 0;
   int tmpi, n100 = 0, n50 = 0;
+  int relax_version = 1;
 
   /* parse arguments ------------------------------------------------- */
   me = argv[0];
@@ -907,6 +920,26 @@ int main(int argc, char* argv[]) {
       continue;
     }
 
+    if(!strcmp(a, "-rv0")) {
+      relax_version = 0;
+      continue;
+    }
+
+    if(!strcmp(a, "-rv1")) {
+      relax_version = 1;
+      continue;
+    }
+
+    if(!strcmp(a, "-relax")) {
+      ezpp_set_relax(ez, 1);
+      continue;
+    }
+
+    if(!strcmp(a, "-autopilot")) {
+      ezpp_set_autopilot(ez, 1);
+      continue;
+    }
+
     if (!strcmp(a, "-touch")) {
       mods |= MODS_TOUCH_DEVICE;
       continue;
@@ -949,6 +982,7 @@ int main(int argc, char* argv[]) {
   ezpp_set_mods(ez, mods);
   ezpp_set_speed_stars(ez, speed_stars);
   ezpp_set_aim_stars(ez, aim_stars);
+  ezpp_set_relax_version(ez, relax_version);
   result = ezpp(ez, argv[1]);
 
 output:

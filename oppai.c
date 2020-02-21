@@ -109,6 +109,9 @@ OPPAIAPI int ezpp_score_version(ezpp_t ez);
 OPPAIAPI float ezpp_time_at(ezpp_t ez, int i);
 OPPAIAPI float ezpp_strain_at(ezpp_t ez, int i, int difficulty_type);
 
+OPPAIAPI void ezpp_set_relax(ezpp_t ez, int relax);
+OPPAIAPI void ezpp_set_relax_version(ezpp_t ez, int relax_version);
+OPPAIAPI void ezpp_set_autopilot(ezpp_t ez, int relax);
 OPPAIAPI void ezpp_set_aim_stars(ezpp_t ez, float aim_stars);
 OPPAIAPI void ezpp_set_speed_stars(ezpp_t ez, float speed_stars);
 OPPAIAPI void ezpp_set_base_ar(ezpp_t ez, float ar);
@@ -558,6 +561,8 @@ struct ezpp {
   float aim_stars, aim_difficulty, aim_length_bonus;
   float speed_stars, speed_difficulty, speed_length_bonus;
   float pp, aim_pp, speed_pp, acc_pp;
+  int relax, autopilot;
+  int relax_version;
 
   /* parser */
   char section[64];
@@ -2064,6 +2069,16 @@ int pp_std(ezpp_t ez) {
     ez->max_combo = 1;
   }
 
+  #define default_relax_autopilot(value, def, expr1, expr2) \
+  if(ez->relax_version == 0) { \
+    value = def; \
+  } else { \
+    if(ez->relax == 1) value = expr1; \
+    if(ez->autopilot == 1) value = expr2;\
+    if(ez->relax == 0 && ez->autopilot == 0) value = def; \
+  }
+  default_relax_autopilot(length_bonus, length_bonus, 1.1f, length_bonus);
+
   accuracy = acc_calc(ez->n300, ez->n100, ez->n50, ez->nmiss);
 
   /*
@@ -2125,13 +2140,13 @@ int pp_std(ezpp_t ez) {
     }
     ez->aim_pp *= fl_bonus;
   }
-
+  
   /* acc bonus (bad aim can lead to bad acc) */
-  acc_bonus = 0.5f + accuracy / 2.0f;
+  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, 0.6f, 1.2f)
 
   /* od bonus (high od requires better aim timing to acc) */
   od_squared = (float)pow(ez->od, 2);
-  od_bonus = 0.98f + od_squared / 2500.0f;
+  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.2f, 1.2f)
 
   ez->aim_pp *= acc_bonus;
   ez->aim_pp *= od_bonus;
@@ -2147,10 +2162,10 @@ int pp_std(ezpp_t ez) {
   ez->speed_pp *= hd_bonus;
 
   /* scale the speed value with accuracy slightly */
-  ez->speed_pp *= 0.02f + accuracy;
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.02f + accuracy), ez->speed_pp * 1.04f, ez->speed_pp * (0.1f + accuracy))
 
   /* it's important to also consider accuracy difficulty when doing that */
-  ez->speed_pp *= 0.96f + (od_squared / 1600.0f);
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * 1.04f, ez->speed_pp * 1.2f)
 
   /* acc pp ---------------------------------------------------------- */
   /* arbitrary values tom crafted out of trial and error */
@@ -2158,7 +2173,7 @@ int pp_std(ezpp_t ez) {
     (float)pow(real_acc, 24.0f) * 2.83f;
 
   /* length bonus (not the same as speed/aim length bonus) */
-  ez->acc_pp *= al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f));
+  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), 0.25f, (float)pow(ncircles / 1000.0f, 0.4f) + 0.3f)
 
   if (ez->mods & MODS_HD) ez->acc_pp *= 1.08f;
   if (ez->mods & MODS_FL) ez->acc_pp *= 1.02f;
@@ -2168,17 +2183,51 @@ int pp_std(ezpp_t ez) {
   if (ez->mods & MODS_NF) final_multiplier *= 0.90f;
   if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
 
-  ez->pp = (float)(
-    pow(
-      pow(ez->aim_pp, 1.1f) +
-      pow(ez->speed_pp, 1.1f) +
-      pow(ez->acc_pp, 1.1f),
-      1.0f / 1.1f
-    ) * final_multiplier
-  );
+  if (ez->relax_version == 0) {
+    if (ez->relax == 1) {
+      ez->speed_pp = 0;
+    } else if (ez->autopilot == 1) {
+      ez->aim_pp = 0;
+    }
+    ez->pp = (float)(
+      pow(	
+        pow(ez->aim_pp, 1.1f) +	
+        pow(ez->speed_pp, 1.1f) +	
+        pow(ez->acc_pp, 1.1f),	
+        1.0f / 1.1f	
+      ) * final_multiplier	
+    );
+  } else {
+    default_relax_autopilot(ez->pp,
+    (float)(
+      pow(	
+        pow(ez->aim_pp, 1.1f) +	
+        pow(ez->speed_pp, 1.1f) +	
+        pow(ez->acc_pp, 1.1f),	
+        1.0f / 1.1f	
+      ) * final_multiplier	
+    ),
+    (float)(
+      pow(
+        pow(ez->aim_pp, 1.1f) +
+        pow(ez->speed_pp, 1.1f) +
+        pow(ez->acc_pp, 0.6f),
+        1.0f / 1.1f
+        ) * final_multiplier
+    ),
+    (float)(
+      pow(
+        pow(ez->aim_pp, 0.6f) +
+        pow(ez->speed_pp, 1.1f) +
+        pow(ez->acc_pp, 1.1f),
+        1.0f / 1.1f
+        ) * final_multiplier)
+    )
+  }
 
   ez->accuracy_percent = accuracy * 100.0f;
 
+  #undef default_relax_autopilot
   return 0;
 }
 
@@ -2490,6 +2539,9 @@ setter(int, mode)
 setter(int, combo)
 setter(int, score_version)
 setter(float, accuracy_percent)
+setter(int, relax)
+setter(int, autopilot)
+setter(int, relax_version)
 #undef setter
 
 OPPAIAPI

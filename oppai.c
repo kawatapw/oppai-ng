@@ -2142,11 +2142,11 @@ int pp_std(ezpp_t ez) {
   }
   
   /* acc bonus (bad aim can lead to bad acc) */
-  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, 0.6f, 1.2f)
+  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, 0.9f, 1.2f)
 
   /* od bonus (high od requires better aim timing to acc) */
   od_squared = (float)pow(ez->od, 2);
-  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.2f, 1.2f)
+  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.9f, 1.2f)
 
   ez->aim_pp *= acc_bonus;
   ez->aim_pp *= od_bonus;
@@ -2173,7 +2173,7 @@ int pp_std(ezpp_t ez) {
     (float)pow(real_acc, 24.0f) * 2.83f;
 
   /* length bonus (not the same as speed/aim length bonus) */
-  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), 0.25f, (float)pow(ncircles / 1000.0f, 0.4f) + 0.3f)
+  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), ez->acc_pp * al_min(0.95f, (float)pow(ncircles / 1000.0f, 0.2f)), ez->acc_pp * al_min(1.175f, (float)pow(ncircles / 1000.0f, 0.275f)))
 
   if (ez->mods & MODS_HD) ez->acc_pp *= 1.08f;
   if (ez->mods & MODS_FL) ez->acc_pp *= 1.02f;
@@ -2209,17 +2209,17 @@ int pp_std(ezpp_t ez) {
     ),
     (float)(
       pow(
-        pow(ez->aim_pp, 1.1f) +
-        pow(ez->speed_pp, 1.1f) +
+        pow(ez->aim_pp, 1.2f) +
+        pow(ez->speed_pp, 0.8f) +
         pow(ez->acc_pp, 0.6f),
         1.0f / 1.1f
         ) * final_multiplier
     ),
     (float)(
       pow(
-        pow(ez->aim_pp, 0.6f) +
-        pow(ez->speed_pp, 1.1f) +
-        pow(ez->acc_pp, 1.1f),
+        pow(ez->aim_pp, 0.7f) +
+        pow(ez->speed_pp, 1.05f) +
+        pow(ez->acc_pp, 1.05f),
         1.0f / 1.1f
         ) * final_multiplier)
     )

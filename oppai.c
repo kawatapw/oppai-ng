@@ -222,7 +222,7 @@ OPPAIAPI char* oppai_version_str(void);
 
 #define OPPAI_VERSION_MAJOR 103
 #define OPPAI_VERSION_MINOR 2
-#define OPPAI_VERSION_PATCH 4
+#define OPPAI_VERSION_PATCH 5
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -2142,11 +2142,11 @@ int pp_std(ezpp_t ez) {
   }
   
   /* acc bonus (bad aim can lead to bad acc) */
-  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, 0.9f, 1.2f)
+  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, 0.6f + accuracy / 2.0f, 0.7f + accuracy / 2.0f)
 
   /* od bonus (high od requires better aim timing to acc) */
   od_squared = (float)pow(ez->od, 2);
-  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.9f, 1.2f)
+  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.97f + od_squared / 2200.0f, 1.2f)
 
   ez->aim_pp *= acc_bonus;
   ez->aim_pp *= od_bonus;
@@ -2162,10 +2162,10 @@ int pp_std(ezpp_t ez) {
   ez->speed_pp *= hd_bonus;
 
   /* scale the speed value with accuracy slightly */
-  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.02f + accuracy), ez->speed_pp * 1.04f, ez->speed_pp * (0.1f + accuracy))
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.02f + accuracy), ez->speed_pp * 1.04f, ez->speed_pp * (0.05f + accuracy))
 
   /* it's important to also consider accuracy difficulty when doing that */
-  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * 1.04f, ez->speed_pp * 1.2f)
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * (0.93f + od_squared / 900.0f), ez->speed_pp * 1.2f)
 
   /* acc pp ---------------------------------------------------------- */
   /* arbitrary values tom crafted out of trial and error */
@@ -2173,7 +2173,7 @@ int pp_std(ezpp_t ez) {
     (float)pow(real_acc, 24.0f) * 2.83f;
 
   /* length bonus (not the same as speed/aim length bonus) */
-  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), ez->acc_pp * al_min(0.95f, (float)pow(ncircles / 1000.0f, 0.2f)), ez->acc_pp * al_min(1.175f, (float)pow(ncircles / 1000.0f, 0.275f)))
+  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), ez->acc_pp * al_min(0.4f, (float)pow(ncircles / 5000.0f, 0.6f)), ez->acc_pp * al_min(1.175f, (float)pow(ncircles / 1000.0f, 0.4f)))
 
   if (ez->mods & MODS_HD) ez->acc_pp *= 1.08f;
   if (ez->mods & MODS_FL) ez->acc_pp *= 1.02f;
@@ -2209,17 +2209,17 @@ int pp_std(ezpp_t ez) {
     ),
     (float)(
       pow(
-        pow(ez->aim_pp, 1.2f) +
-        pow(ez->speed_pp, 0.8f) +
-        pow(ez->acc_pp, 0.6f),
-        1.0f / 1.1f
+        pow(ez->aim_pp, 1.15f) +
+        pow(ez->speed_pp, 0.9f) +
+        pow(ez->acc_pp, 1.6f),
+        1.0f / 1.2f
         ) * final_multiplier
     ),
     (float)(
       pow(
         pow(ez->aim_pp, 0.7f) +
         pow(ez->speed_pp, 1.05f) +
-        pow(ez->acc_pp, 1.05f),
+        pow(ez->acc_pp, 1.25f),
         1.0f / 1.1f
         ) * final_multiplier)
     )

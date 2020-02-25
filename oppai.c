@@ -2044,6 +2044,7 @@ double aim_speed_difference_factor(double aim, double speed)
 {
   double total = pow(aim, 2.0) + pow(speed, 2.0);
   double f = 0.0;
+  double factor;
   if(aim > speed)
   {
       f = aim / speed;
@@ -2054,7 +2055,7 @@ double aim_speed_difference_factor(double aim, double speed)
       f = speed / aim;
       speed = speed * (f-1) + 0.001;
   }
-  double factor = 1 / aim + 1 / speed + 1 / total;
+  factor = 1 / aim + 1 / speed + 1 / total;
   return pow(factor, -1);
 }
 
@@ -2079,6 +2080,8 @@ int pp_std(ezpp_t ez) {
   /* acc used for pp is different in scorev1 because it ignores sliders */
   float real_acc;
   float accuracy;
+
+  double diff;
 
   ez->nspinners = ez->nobjects - ez->nsliders - ez->ncircles;
 
@@ -2201,7 +2204,7 @@ int pp_std(ezpp_t ez) {
   if (ez->mods & MODS_NF) final_multiplier *= 0.90f;
   if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
 
-  double diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
+  diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
 
   if (ez->relax_version == 0) {
     if (ez->relax == 1) {

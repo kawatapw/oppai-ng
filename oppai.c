@@ -222,7 +222,7 @@ OPPAIAPI char* oppai_version_str(void);
 
 #define OPPAI_VERSION_MAJOR 103
 #define OPPAI_VERSION_MINOR 2
-#define OPPAI_VERSION_PATCH 7
+#define OPPAI_VERSION_PATCH 8
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -2040,6 +2040,24 @@ float base_pp(float stars) {
     / 100000.0f;
 }
 
+double aim_speed_difference_factor(double aim, double speed)
+{
+  double total = pow(aim, 2.0) + pow(speed, 2.0);
+  double f = 0.0;
+  if(aim > speed)
+  {
+      f = aim / speed;
+      aim = aim * (f-1) + 0.001;
+  }
+  else
+  {
+      f = speed / aim;
+      speed = speed * (f-1) + 0.001;
+  }
+  double factor = 1 / aim + 1 / speed + 1 / total;
+  return pow(factor, -1);
+}
+
 int pp_std(ezpp_t ez) {
   int ncircles = ez->ncircles;
   float nobjects_over_2k = ez->nobjects / 2000.0f;
@@ -2183,6 +2201,8 @@ int pp_std(ezpp_t ez) {
   if (ez->mods & MODS_NF) final_multiplier *= 0.90f;
   if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
 
+  double diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
+
   if (ez->relax_version == 0) {
     if (ez->relax == 1) {
       ez->speed_pp = 0;
@@ -2213,8 +2233,8 @@ int pp_std(ezpp_t ez) {
         pow(ez->speed_pp, 0.7f) +
         pow(ez->acc_pp, 1.4f),
         1.0f / 1.2f
-        ) * final_multiplier
-    ),
+        ) - pow(diff, 1.1f)
+    ) * final_multiplier,
     (float)(
       pow(
         pow(ez->aim_pp, 0.7f) +

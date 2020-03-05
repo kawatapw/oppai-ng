@@ -2042,21 +2042,7 @@ float base_pp(float stars) {
 
 double aim_speed_difference_factor(double aim, double speed)
 {
-  double total = pow(aim, 2.0) + pow(speed, 2.0);
-  double f = 0.0;
-  double factor;
-  if(aim > speed)
-  {
-      f = aim / speed;
-      aim = aim * (f-1) + 0.001;
-  }
-  else
-  {
-      f = speed / aim;
-      speed = speed * (f-1) + 0.001;
-  }
-  factor = 1 / aim + 1 / speed + 1 / total;
-  return pow(factor, -1);
+  return fabs(speed) / fabs(aim);
 }
 
 int pp_std(ezpp_t ez) {
@@ -2163,7 +2149,7 @@ int pp_std(ezpp_t ez) {
   }
   
   /* acc bonus (bad aim can lead to bad acc) */
-  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, (0.5f + (2 * pow(accuracy, 2))) / 2.5f, 0.1f + accuracy / 10.0f)
+  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, (0.5f + (2.0f * pow(accuracy, 2.0f))) / 2.5f, 0.1f + accuracy / 10.0f)
 
   /* od bonus (high od requires better aim timing to acc) */
   od_squared = (float)pow(ez->od, 2);
@@ -2186,7 +2172,7 @@ int pp_std(ezpp_t ez) {
   default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.02f + accuracy), ez->speed_pp * (0.01f + accuracy) * 0.94f, ez->speed_pp * (0.5f + (accuracy - 0.5f)))
 
   /* it's important to also consider accuracy difficulty when doing that */
-  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * (0.23f + od_squared / 900.0f), ez->speed_pp * 0.4f)
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * 0.4f)
 
   /* acc pp ---------------------------------------------------------- */
   /* arbitrary values tom crafted out of trial and error */
@@ -2205,6 +2191,31 @@ int pp_std(ezpp_t ez) {
   if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
 
   diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
+  printf("\nspeed_pp before adjusting: %.2f\n", ez->speed_pp);
+  printf("\ratio : %.2f\n", diff);
+  
+  if(diff < 0.2f)
+  {
+    ez->speed_pp *= 0.1f;
+  }
+  else if(diff < 0.5f)
+  {
+    ez->speed_pp *= 0.25f;
+  }
+  else if(diff < 0.75f)
+  {
+    ez->speed_pp *= 0.5f;
+  }
+  else if(diff < 0.85f)
+  {
+    ez->speed_pp *= 0.66f;
+  }
+  else if(diff >= 0.85f)
+  {
+    ez->speed_pp *= 0.8f;
+  }
+  printf("\nspeed_pp after adjusting: %.2f\n", ez->speed_pp);
+
 
   if (ez->relax_version == 0) {
     if (ez->relax == 1) {
@@ -2233,7 +2244,7 @@ int pp_std(ezpp_t ez) {
     (float)(
       pow(
         pow(ez->aim_pp, 1.2f) +
-        pow(ez->speed_pp, 0.7f) +
+        pow(ez->speed_pp, 1.1f) +
         pow(ez->acc_pp, 1.4f),
         1.0f / 1.2f
         ) - pow(diff, 1.1f)

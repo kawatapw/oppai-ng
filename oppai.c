@@ -221,8 +221,8 @@ OPPAIAPI char* oppai_version_str(void);
 #include <math.h>
 
 #define OPPAI_VERSION_MAJOR 103
-#define OPPAI_VERSION_MINOR 2
-#define OPPAI_VERSION_PATCH 8
+#define OPPAI_VERSION_MINOR 3
+#define OPPAI_VERSION_PATCH 0
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -2042,21 +2042,7 @@ float base_pp(float stars) {
 
 double aim_speed_difference_factor(double aim, double speed)
 {
-  double total = pow(aim, 2.0) + pow(speed, 2.0);
-  double f = 0.0;
-  double factor;
-  if(aim > speed)
-  {
-      f = aim / speed;
-      aim = aim * (f-1) + 0.001;
-  }
-  else
-  {
-      f = speed / aim;
-      speed = speed * (f-1) + 0.001;
-  }
-  factor = 1 / aim + 1 / speed + 1 / total;
-  return pow(factor, -1);
+  return fabs(fabs(speed) / fabs(aim));
 }
 
 int pp_std(ezpp_t ez) {
@@ -2163,11 +2149,11 @@ int pp_std(ezpp_t ez) {
   }
   
   /* acc bonus (bad aim can lead to bad acc) */
-  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, (0.5f + (2 * pow(accuracy, 2))) / 2.5f, 0.7f + accuracy / 2.0f)
+  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, (0.5f + (2.0f * pow(accuracy, 2.0f))) / 2.5f, 0.1f + accuracy / 10.0f)
 
   /* od bonus (high od requires better aim timing to acc) */
   od_squared = (float)pow(ez->od, 2);
-  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.9f, 1.2f)
+  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.9f, od_squared / 2500.0f)
 
   ez->aim_pp *= acc_bonus;
   ez->aim_pp *= od_bonus;
@@ -2183,10 +2169,10 @@ int pp_std(ezpp_t ez) {
   ez->speed_pp *= hd_bonus;
 
   /* scale the speed value with accuracy slightly */
-  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.02f + accuracy), ez->speed_pp * (0.01f + accuracy) * 0.94f, ez->speed_pp * (0.05f + accuracy))
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.02f + accuracy), ez->speed_pp * (0.01f + accuracy) * 0.94f, ez->speed_pp * (0.5f + (accuracy - 0.5f)))
 
   /* it's important to also consider accuracy difficulty when doing that */
-  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * (0.23f + od_squared / 900.0f), ez->speed_pp * 1.2f)
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * 0.4f)
 
   /* acc pp ---------------------------------------------------------- */
   /* arbitrary values tom crafted out of trial and error */
@@ -2194,7 +2180,7 @@ int pp_std(ezpp_t ez) {
     (float)pow(real_acc, 24.0f) * 2.83f;
 
   /* length bonus (not the same as speed/aim length bonus) */
-  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), ez->acc_pp * al_min(0.4f, (float)pow(ncircles / 5000.0f, 0.6f)), ez->acc_pp * al_min(1.175f, (float)pow(ncircles / 1000.0f, 0.4f)))
+  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), ez->acc_pp * al_min(0.4f, (float)pow(ncircles / 5000.0f, 0.6f)), ez->acc_pp * al_min(1.175f, ez->acc_pp * al_min(1.25f, (float)pow(ncircles / 1000.0f, 0.4f))))
 
   if (ez->mods & MODS_HD) ez->acc_pp *= 1.08f;
   if (ez->mods & MODS_FL) ez->acc_pp *= 1.02f;
@@ -2204,7 +2190,31 @@ int pp_std(ezpp_t ez) {
   if (ez->mods & MODS_NF) final_multiplier *= 0.90f;
   if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
 
-  diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
+  if(ez->relax == 1)
+  {
+    diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
+  
+    if(diff < 0.2f)
+    {
+      ez->speed_pp *= 0.1f;
+    }
+    else if(diff < 0.5f)
+    {
+      ez->speed_pp *= 0.25f;
+    }
+    else if(diff < 0.75f)
+    {
+      ez->speed_pp *= 0.5f;
+    }
+    else if(diff < 0.85f)
+    {
+      ez->speed_pp *= 0.66f;
+    }
+    else
+    {
+      ez->speed_pp *= 0.8f;
+    }
+  }
 
   if (ez->relax_version == 0) {
     if (ez->relax == 1) {
@@ -2236,15 +2246,17 @@ int pp_std(ezpp_t ez) {
         pow(ez->speed_pp, 0.7f) +
         pow(ez->acc_pp, 1.4f),
         1.0f / 1.2f
-        ) - pow(diff, 1.1f)
+        )
     ) * final_multiplier,
     (float)(
       pow(
         pow(ez->aim_pp, 0.7f) +
-        pow(ez->speed_pp, 1.05f) +
-        pow(ez->acc_pp, 1.25f),
-        1.0f / 1.1f
-        ) * final_multiplier)
+        pow(ez->speed_pp, 1.2f) +
+        pow(ez->acc_pp, 1.2f),
+        1.0f / 1.2f
+        )
+    ) * final_multiplier
+
     )
   }
 

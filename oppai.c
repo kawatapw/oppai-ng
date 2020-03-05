@@ -2042,7 +2042,7 @@ float base_pp(float stars) {
 
 double aim_speed_difference_factor(double aim, double speed)
 {
-  return fabs(speed) / fabs(aim);
+  return fabs(fabs(speed) / fabs(aim));
 }
 
 int pp_std(ezpp_t ez) {
@@ -2190,32 +2190,31 @@ int pp_std(ezpp_t ez) {
   if (ez->mods & MODS_NF) final_multiplier *= 0.90f;
   if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
 
-  diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
-  printf("\nspeed_pp before adjusting: %.2f\n", ez->speed_pp);
-  printf("\ratio : %.2f\n", diff);
+  if(ez->relax == 1)
+  {
+    diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
   
-  if(diff < 0.2f)
-  {
-    ez->speed_pp *= 0.1f;
+    if(diff < 0.2f)
+    {
+      ez->speed_pp *= 0.1f;
+    }
+    else if(diff < 0.5f)
+    {
+      ez->speed_pp *= 0.25f;
+    }
+    else if(diff < 0.75f)
+    {
+      ez->speed_pp *= 0.5f;
+    }
+    else if(diff < 0.85f)
+    {
+      ez->speed_pp *= 0.66f;
+    }
+    else
+    {
+      ez->speed_pp *= 0.8f;
+    }
   }
-  else if(diff < 0.5f)
-  {
-    ez->speed_pp *= 0.25f;
-  }
-  else if(diff < 0.75f)
-  {
-    ez->speed_pp *= 0.5f;
-  }
-  else if(diff < 0.85f)
-  {
-    ez->speed_pp *= 0.66f;
-  }
-  else if(diff >= 0.85f)
-  {
-    ez->speed_pp *= 0.8f;
-  }
-  printf("\nspeed_pp after adjusting: %.2f\n", ez->speed_pp);
-
 
   if (ez->relax_version == 0) {
     if (ez->relax == 1) {
@@ -2244,10 +2243,10 @@ int pp_std(ezpp_t ez) {
     (float)(
       pow(
         pow(ez->aim_pp, 1.2f) +
-        pow(ez->speed_pp, 1.1f) +
+        pow(ez->speed_pp, 0.7f) +
         pow(ez->acc_pp, 1.4f),
         1.0f / 1.2f
-        ) - pow(diff, 1.1f)
+        )
     ) * final_multiplier,
     (float)(
       pow(
@@ -2255,7 +2254,7 @@ int pp_std(ezpp_t ez) {
         pow(ez->speed_pp, 1.2f) +
         pow(ez->acc_pp, 1.2f),
         1.0f / 1.2f
-        ) - pow(diff, 1.1f)
+        )
     ) * final_multiplier
 
     )

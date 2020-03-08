@@ -222,7 +222,7 @@ OPPAIAPI char* oppai_version_str(void);
 
 #define OPPAI_VERSION_MAJOR 103
 #define OPPAI_VERSION_MINOR 3
-#define OPPAI_VERSION_PATCH 0
+#define OPPAI_VERSION_PATCH 1
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -2210,9 +2210,30 @@ int pp_std(ezpp_t ez) {
     {
       ez->speed_pp *= 0.66f;
     }
+    
+    if(diff > 0.85f)
+    {
+      ez->speed_pp *= 0.5f;
+    }
+    else if(diff > 0.95f)
+    {
+      ez->speed_pp *= 0.4f;
+    }
+    else if(diff > 1.2f)
+    {
+      ez->speed_pp *= 0.2f;
+    }
+    else if(diff > 1.5f)
+    {
+      ez->speed_pp *= 0.1f;
+    }
+    else if(diff > 2.0f)
+    {
+      ez->speed_pp *= 0.08f;
+    }
     else
     {
-      ez->speed_pp *= 0.8f;
+      ez->speed_pp *= 0.04f;
     }
   }
 

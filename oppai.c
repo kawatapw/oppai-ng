@@ -2178,6 +2178,12 @@ int pp_std(ezpp_t ez) {
   /* arbitrary values tom crafted out of trial and error */
   ez->acc_pp = (float)pow(1.52163f, ez->od) *
     (float)pow(real_acc, 24.0f) * 2.83f;
+  
+  /*penalty loss of accuracy hard if using relax*/
+  if(ez->relax == 1)
+  {
+    ez->acc_pp = (float)pow(accuracy / 1.0, 4);
+  }
 
   /* length bonus (not the same as speed/aim length bonus) */
   default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), ez->acc_pp * al_min(0.4f, (float)pow(ncircles / 5000.0f, 0.6f)), ez->acc_pp * al_min(1.175f, ez->acc_pp * al_min(1.25f, (float)pow(ncircles / 1000.0f, 0.4f))))

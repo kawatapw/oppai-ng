@@ -2283,7 +2283,7 @@ int pp_std(ezpp_t ez) {
   /*penalty loss of accuracy hard if using relax*/
   if(ez->relax == 1)
   {
-    ez->pp = (float)pow(accuracy / 1.0, 4);
+    ez->pp *= (float)pow(accuracy / 1.0, 4);
     /*
     99% acc gives 96% total pp
     95% acc gives 81% total pp

@@ -222,7 +222,7 @@ OPPAIAPI char* oppai_version_str(void);
 
 #define OPPAI_VERSION_MAJOR 103
 #define OPPAI_VERSION_MINOR 3
-#define OPPAI_VERSION_PATCH 2
+#define OPPAI_VERSION_PATCH 3
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -2283,7 +2283,7 @@ int pp_std(ezpp_t ez) {
   /*penalty loss of accuracy hard if using relax*/
   if(ez->relax == 1)
   {
-    ez->pp = (float)pow(accuracy / 1.0, 4);
+    ez->pp *= (float)pow(accuracy / 1.0, 4);
     /*
     99% acc gives 96% total pp
     95% acc gives 81% total pp

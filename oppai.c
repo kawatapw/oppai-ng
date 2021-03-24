@@ -106,8 +106,12 @@ OPPAIAPI int ezpp_combo(ezpp_t ez);
 OPPAIAPI int ezpp_max_combo(ezpp_t ez);
 OPPAIAPI int ezpp_mods(ezpp_t ez);
 OPPAIAPI int ezpp_score_version(ezpp_t ez);
-OPPAIAPI float ezpp_time_at(ezpp_t ez, int i);
+OPPAIAPI float ezpp_time_at(ezpp_t ez, int i); /* milliseconds */
 OPPAIAPI float ezpp_strain_at(ezpp_t ez, int i, int difficulty_type);
+OPPAIAPI int ezpp_ntiming_points(ezpp_t ez);
+OPPAIAPI float ezpp_timing_time(ezpp_t ez, int i); /* milliseconds */
+OPPAIAPI float ezpp_timing_ms_per_beat(ezpp_t ez, int i);
+OPPAIAPI int ezpp_timing_change(ezpp_t ez, int i);
 
 OPPAIAPI void ezpp_set_relax(ezpp_t ez, int relax);
 OPPAIAPI void ezpp_set_relax_version(ezpp_t ez, int relax_version);
@@ -221,8 +225,8 @@ OPPAIAPI char* oppai_version_str(void);
 #include <math.h>
 
 #define OPPAI_VERSION_MAJOR 103
-#define OPPAI_VERSION_MINOR 3
-#define OPPAI_VERSION_PATCH 3
+#define OPPAI_VERSION_MINOR 4
+#define OPPAI_VERSION_PATCH 0
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -2053,7 +2057,10 @@ int pp_std(ezpp_t ez) {
     0.4f * al_min(1.0f, nobjects_over_2k) +
     (ez->nobjects > 2000 ? (float)log10(nobjects_over_2k) * 0.5f : 0.0f)
   );
-  float miss_penality = (float)pow(0.97f, ez->nmiss);
+
+  float miss_penality_aim = 0.97 * pow(1 - pow((double)ez->nmiss / ez->nobjects, 0.775), ez->nmiss);
+  float miss_penality_speed = 0.97 * pow(1 - pow((double)ez->nmiss / ez->nobjects, 0.775f), pow(ez->nmiss, 0.875f));
+
   float combo_break = (
     (float)pow(ez->combo, 0.8f) / (float)pow(ez->max_combo, 0.8f)
   );
@@ -2109,11 +2116,11 @@ int pp_std(ezpp_t ez) {
   }
 
   /* ar bonus -------------------------------------------------------- */
-  ar_bonus = 1.0f;
+  ar_bonus = 0.0f;
 
   /* high ar bonus */
   if (ez->ar > 10.33f) {
-    ar_bonus += 0.3f * (ez->ar - 10.33f);
+    ar_bonus += 0.4f * (ez->ar - 10.33f);
   }
 
   /* low ar bonus */
@@ -2124,9 +2131,11 @@ int pp_std(ezpp_t ez) {
   /* aim pp ---------------------------------------------------------- */
   ez->aim_pp = base_pp(ez->aim_stars);
   ez->aim_pp *= length_bonus;
-  ez->aim_pp *= miss_penality;
+  if (ez->nmiss > 0) {
+    ez->aim_pp *= miss_penality_aim;
+  }
   ez->aim_pp *= combo_break;
-  ez->aim_pp *= ar_bonus;
+  ez->aim_pp *= 1.0f + (float)al_min(ar_bonus, ar_bonus * (ez->nobjects / 1000.0f));
 
   /* hidden */
   hd_bonus = 1.0f;
@@ -2161,18 +2170,25 @@ int pp_std(ezpp_t ez) {
   /* speed pp -------------------------------------------------------- */
   ez->speed_pp = base_pp(ez->speed_stars);
   ez->speed_pp *= length_bonus;
-  ez->speed_pp *= miss_penality;
+  if (ez->nmiss > 0) {
+    ez->speed_pp *= miss_penality_speed;
+  }
   ez->speed_pp *= combo_break;
   if (ez->ar > 10.33f) {
-    ez->speed_pp *= ar_bonus;
+    ez->speed_pp *= 1.0f + (float)al_min(ar_bonus, ar_bonus * (ez->nobjects / 1000.0f));;
   }
   ez->speed_pp *= hd_bonus;
 
   /* scale the speed value with accuracy slightly */
-  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.02f + accuracy), ez->speed_pp * (0.01f + accuracy) * 0.94f, ez->speed_pp * (0.5f + (accuracy - 0.5f)))
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.95f + od_squared / 750) * (float)pow(accuracy, (14.5 - al_max(ez->od, 8)) / 2), 
+          ez->speed_pp * (0.98f + od_squared / 750) * (float)pow(accuracy, (14.5 - al_max(ez->od, 8)) / 2),
+          ez->speed_pp * (0.60f + od_squared / 750) * (float)pow(accuracy, (14.5 - al_max(ez->od, 8)) / 2))
 
   /* it's important to also consider accuracy difficulty when doing that */
-  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * (0.96f + od_squared / 1600.0f), ez->speed_pp * 0.4f)
+  default_relax_autopilot(ez->speed_pp, ez->speed_pp * (float) pow(0.98f, ez->n50 < ez->nobjects / 500.0f ? 0.00 : ez->n50 - ez->nobjects / 500.0f),
+          ez->speed_pp * (float) pow(0.99f, ez->n50 < ez->nobjects / 500.0f ? 0.00 : ez->n50 - ez->nobjects / 500.0f),
+          ez->speed_pp * (float) pow(0.60f, ez->n50 < ez->nobjects / 500.0f ? 0.00 : ez->n50 - ez->nobjects / 500.0f))
+          
 
   /* acc pp ---------------------------------------------------------- */
   /* arbitrary values tom crafted out of trial and error */
@@ -2187,8 +2203,8 @@ int pp_std(ezpp_t ez) {
 
   /* total pp -------------------------------------------------------- */
   final_multiplier = 1.12f;
-  if (ez->mods & MODS_NF) final_multiplier *= 0.90f;
-  if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
+  if (ez->mods & MODS_NF) final_multiplier *= (float) al_max(0.9f, 1.0f - 0.2f * ez->nmiss);
+  if (ez->mods & MODS_SO) final_multiplier *= 1.0 - pow((double)ez->nspinners / ez->nobjects, 0.85);
 
   if(ez->relax == 1)
   {
@@ -2587,6 +2603,22 @@ OPPAIAPI float ezpp_time_at(ezpp_t ez, int i) {
 
 OPPAIAPI float ezpp_strain_at(ezpp_t ez, int i, int difficulty_type) {
   return ez->objects.len ? ez->objects.data[i].strains[difficulty_type] : 0;
+}
+
+OPPAIAPI int ezpp_ntiming_points(ezpp_t ez) {
+  return ez->timing_points.len;
+}
+
+OPPAIAPI float ezpp_timing_time(ezpp_t ez, int i) {
+  return ez->timing_points.len ? ez->timing_points.data[i].time : 0;
+}
+
+OPPAIAPI float ezpp_timing_ms_per_beat(ezpp_t ez, int i) {
+  return ez->timing_points.len ? ez->timing_points.data[i].ms_per_beat : 0;
+}
+
+OPPAIAPI int ezpp_timing_change(ezpp_t ez, int i) {
+  return ez->timing_points.len ? ez->timing_points.data[i].change : 0;
 }
 
 #define setter(t, x) \

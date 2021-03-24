@@ -106,6 +106,7 @@ should pass the same test suite that oppai-ng passes.
 * [oppai5 (golang)](https://github.com/flesnuk/oppai5) (by flesnuk)
 * [OppaiSharp (C#)](https://github.com/HoLLy-HaCKeR/OppaiSharp)
   (by HoLLy)
+* [osu-perf (rust)](https://gitlab.com/JackRedstonia/osu-perf/) (by JackRedstonia)
 
 # bindings for other programming languages
 thanks to swig it's trivial to generate native bindings for other
@@ -364,3 +365,28 @@ to the build script to disable features:
 
 * ```-DOPPAI_UTF8GRAPH``` use utf-8 characters for the strains graph
 
+# generating the test suite
+
+```sh
+cd test
+OSU_API_KEY=... ./gentest.py  > test_suite.c
+```
+
+download all the maps
+
+```sh
+mkdir test_suite
+cd test_suite
+../download_suite.py ../test_suite.json
+cd ..
+```
+
+the json file can be reused to avoid hitting the osu API again. keep using it unless a pp recalc
+happens. you don't want to keep hitting the osu api
+
+now you can build and run the test suite:
+
+```sh
+./build
+./oppai_test
+```

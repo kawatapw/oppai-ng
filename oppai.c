@@ -2162,7 +2162,7 @@ int pp_std(ezpp_t ez) {
 
   /* od bonus (high od requires better aim timing to acc) */
   od_squared = (float)pow(ez->od, 2);
-  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.9f, od_squared / 2500.0f)
+  default_relax_autopilot(od_bonus, 0.98f + od_squared / 2500.0f, 0.9f + od_squared / 2500.0f, 0.975f + od_squared / 2500.0f)
 
   ez->aim_pp *= acc_bonus;
   ez->aim_pp *= od_bonus;

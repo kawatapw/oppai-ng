@@ -2182,12 +2182,12 @@ int pp_std(ezpp_t ez) {
   /* scale the speed value with accuracy slightly */
   default_relax_autopilot(ez->speed_pp, ez->speed_pp * (0.95f + od_squared / 750) * (float)pow(accuracy, (14.5 - al_max(ez->od, 8)) / 2), 
           ez->speed_pp * (0.98f + od_squared / 750) * (float)pow(accuracy, (14.5 - al_max(ez->od, 8)) / 2),
-          ez->speed_pp * (0.60f + od_squared / 750) * (float)pow(accuracy, (14.5 - al_max(ez->od, 8)) / 2))
+          ez->speed_pp * (0.70f + od_squared / 750) * (float)pow(accuracy, (14.5 - al_max(ez->od, 8)) / 2))
 
   /* it's important to also consider accuracy difficulty when doing that */
   default_relax_autopilot(ez->speed_pp, ez->speed_pp * (float) pow(0.98f, ez->n50 < ez->nobjects / 500.0f ? 0.00 : ez->n50 - ez->nobjects / 500.0f),
-          ez->speed_pp * (float) pow(0.99f, ez->n50 < ez->nobjects / 500.0f ? 0.00 : ez->n50 - ez->nobjects / 500.0f),
-          ez->speed_pp * (float) pow(0.60f, ez->n50 < ez->nobjects / 500.0f ? 0.00 : ez->n50 - ez->nobjects / 500.0f))
+          ez->speed_pp * (float) pow(0.99f, ez->n50 < ez->nobjects / 666.0f ? 0.00 : ez->n50 - ez->nobjects / 666.0f),
+          ez->speed_pp * (float) pow(0.70f, ez->n50 < ez->nobjects / 666.0f ? 0.00 : ez->n50 - ez->nobjects / 666.0f))
           
 
   /* acc pp ---------------------------------------------------------- */

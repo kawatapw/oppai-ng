@@ -2158,7 +2158,7 @@ int pp_std(ezpp_t ez) {
   }
   
   /* acc bonus (bad aim can lead to bad acc) */
-  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, (0.5f + (2.0f * pow(accuracy, 2.0f))) / 2.5f, 0.1f + accuracy / 10.0f)
+  default_relax_autopilot(acc_bonus, 0.5f + accuracy / 2.0f, (0.5f + (2.0f * pow(accuracy, 2.0f))) / 2.5f, 0.1f + accuracy * 1.05f)
 
   /* od bonus (high od requires better aim timing to acc) */
   od_squared = (float)pow(ez->od, 2);

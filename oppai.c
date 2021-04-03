@@ -2196,7 +2196,10 @@ int pp_std(ezpp_t ez) {
     (float)pow(real_acc, 24.0f) * 2.83f;
 
   /* length bonus (not the same as speed/aim length bonus) */
-  default_relax_autopilot(ez->acc_pp, ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)), ez->acc_pp * al_min(0.4f, (float)pow(ncircles / 5000.0f, 0.6f)), ez->acc_pp * al_min(1.175f, ez->acc_pp * al_min(1.25f, (float)pow(ncircles / 1000.0f, 0.4f))))
+  default_relax_autopilot(ez->acc_pp, 
+    ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)),
+    ez->acc_pp * al_min(0.55f, (float)pow(ncircles / 2500.0f, 0.3f)),
+    ez->acc_pp * al_min(1.35f, (float)pow(ncircles / 1250.0f, 0.33f)))
 
   if (ez->mods & MODS_HD) ez->acc_pp *= 1.08f;
   if (ez->mods & MODS_FL) ez->acc_pp *= 1.02f;

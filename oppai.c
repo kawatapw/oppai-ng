@@ -2200,7 +2200,7 @@ int pp_std(ezpp_t ez) {
   /* length bonus (not the same as speed/aim length bonus) */
   default_relax_autopilot(ez->acc_pp, 
     ez->acc_pp * al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f)),
-    ez->acc_pp * al_min(0.55f, (float)pow(ncircles / 2500.0f, 0.3f)),
+    ez->acc_pp * al_min(0.45f, (float)pow(ncircles / 1250.0f, 0.9f)),
     ez->acc_pp * al_min(1.35f, (float)pow(ncircles / 1250.0f, 0.33f)))
 
   if (ez->mods & MODS_HD) ez->acc_pp *= 1.08f;

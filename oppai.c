@@ -226,7 +226,7 @@ OPPAIAPI char* oppai_version_str(void);
 
 #define OPPAI_VERSION_MAJOR 103
 #define OPPAI_VERSION_MINOR 4
-#define OPPAI_VERSION_PATCH 0
+#define OPPAI_VERSION_PATCH 1
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 

@@ -226,7 +226,7 @@ OPPAIAPI char* oppai_version_str(void);
 
 #define OPPAI_VERSION_MAJOR 103
 #define OPPAI_VERSION_MINOR 4
-#define OPPAI_VERSION_PATCH 1
+#define OPPAI_VERSION_PATCH 2
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -2214,8 +2214,6 @@ int pp_std(ezpp_t ez) {
   if(ez->relax == 1)
   {
     diff = aim_speed_difference_factor(ez->aim_pp, ez->speed_pp);
-
-    printf("Aim to Speed difference: %f\n", diff);
 
     if(diff < 0.2f)
     {
